@@ -1,0 +1,7 @@
+MDEFORMATION
+============
+
+A set of Magma routines that implement Lauder's deformation method 
+for counting points in families of smooth projective hypersurfaces 
+over finite fields (subject to some technical conditions).
+
