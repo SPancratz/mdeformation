@@ -2,10 +2,26 @@
 
     Copyright (C) 2012 Sebastian Pancratz
 
+    Exports the following functions:
+
+        diagfrob(~numF, ~denF, A, n, d, p, N)
+
 ******************************************************************************/
 
-load "Basis.m";
+load "basis.m";
 load "padic_mat.m";
+
+/*
+    Returns the rising factorial $x (x + 1) \dotsm (x + k - 1)$ 
+    for integers $x$ and $k$ with $k >= 0$.
+ */
+function _rfac(x, k)
+    y := Z!1;
+    for i := 0 to k-1 do
+        y := y * (x + i);
+    end for;
+    return y;
+end function;
 
 /*
     Computes the expression 
@@ -38,23 +54,19 @@ function mu_2(m, N)
         t := Z!1;
         for k := 0 to (m div 2) - 1 do
             h := ((m - 2 * k - 1) * (m - 2 * k)) div 2;
-            t := t * h;
-            t := t div (k + 1);
+            t := (t * h) div (k + 1);
             s := s + t;
         end for;
 
-        /*
-            Now we have that 
-                f = m!
-                s = \sum_{k=0}^{\floor{m/2}} 
-                        2^{-k} \frac{m!}{(m-pk)! k!}
-         */
+        // Now we have that 
+        // f = m!
+        // s = \sum_{k=0}^{\floor{m/2}} 2^{-k} \frac{m!}{(m-pk)! k!}
 
         v := Z!0;
         w := Z!0;
         _remove(~s, ~v, s, 2);
         _remove(~f, ~w, f, 2);
-        v := v + w + ((3*m) div 4);
+        v := v - w + ((3*m) div 4);
 
         if (v ge N) then
             return Z!0;
@@ -92,25 +104,23 @@ function mu_p(m, p, N)
 
     f := Factorial(m);
 
-    /*
-        Now we have that 
-            f = m!
-            s = \sum_{k=0}^{\floor{m/p}} 
-                    p^{-k} \frac{m!}{(m-pk)! k!}
-     */
+    // Now we have that 
+    // f = m!
+    // s = \sum_{k=0}^{\floor{m/p}} p^{-k} \frac{m!}{(m-pk)! k!}
 
     v := Z!0;
     w := Z!0;
     _remove(~s, ~v, s, p);
     _remove(~f, ~w, f, p);
-    v := v + w + ((3*m) div 4);
+    v := v - w + (m div p);
 
     if (v ge N) then
         return Z!0;
     else
         t := p^(N-v);
         f := (Modinv(f, t) * s) mod t;
-        return f * p^v;
+        f := f * p^v;
+        return f;
     end if;
 end function;
 
@@ -256,7 +266,7 @@ function dsum_p(DINV, MU, ui, vi, M, n, d, p, N)
     x  := Z!0;
 
     r  := Z!0;
-    m  := (p * (ui + 1) - (vi + 1)) / d;
+    m  := (p * (ui + 1) - (vi + 1)) div d;
 
     if m le M then
         h := p^(r - (m div p));
@@ -300,11 +310,7 @@ end function;
  */
 function alpha_2(U, V, DINV, MU, M, n, d, N)
 
-    ud := n + 1;
-    for i := 1 to n+1 do
-        ud := ud + U[i];
-    end for;
-    ud := ud div d;
+    ud := (n + 1 + &+U) div d;
 
     pN := 2^N;
     x  := 2^ud;
@@ -325,17 +331,14 @@ end function;
     Computes $\alpha_{u+1,v+1}$ modulo $p^N$ when $p > 2$ is an odd prime.
  */
 function alpha_p(U, V, A, DINV, MU, M, n, d, p, N)
-    ud := n + 1;
-    for i := 1 to n+1 do
-        ud := ud + U[i];
-    end for;
-    ud := ud div d;
+
+    ud := (n + 1 + &+U) div d;
 
     pN := p^N;
     x  := p^ud;
 
     for i := 1 to n+1 do
-        e := (p * (U[i] + 1) - (V[i] + 1)) / d;
+        e := (p * (U[i] + 1) - (V[i] + 1)) div d;
         f := A[i]^e mod pN;
         g := dsum(DINV, MU, U[i], V[i], M, n, d, p, N);
         x := (x * f * g) mod pN;
@@ -356,6 +359,9 @@ function alpha(U, V, A, DINV, MU, M, n, d, p, N)
     end if;
 end function;
 
+/*
+    Expects two sequences (that is, not lists) U and V so that we can apply the '&' operator.
+ */
 procedure entry(~u, ~v, U, V, A, DINV, MU, M, C, n, d, p, N)
 
     Z := Integers();
@@ -364,15 +370,8 @@ procedure entry(~u, ~v, U, V, A, DINV, MU, M, C, n, d, p, N)
         Compute $f := (-1)^{u'+v'} (v'-1)! p^n$ exactly.
      */
 
-    ud := n + 1;
-    for i := 1 to n+1 do
-        ud := ud + U[i];
-    end for;
-
-    vd := n + 1;
-    for i := 1 to n+1 do
-        vd := vd + V[i];
-    end for;
+    ud := (n + 1 + &+U);
+    vd := (n + 1 + &+V);
 
     f := Factorial(vd - 1);
     h := p^n;
@@ -434,7 +433,7 @@ procedure diagfrob(~numF, ~denF, A, n, d, p, N)
 
     numF := ZeroMatrix(Z, b, b);
     denF := Z!1;
-count := 0;
+
     for i := 1 to b do
         for j := 1 to b do
 
@@ -455,12 +454,9 @@ count := 0;
             if c eq false then
                 numF[i, j] := Z!0;
             else
-                count := count+ 1;
-                print count;
                 u := Z!0;
                 v := Z!0;
                 entry(~u, ~v, U, V, ALIFT, DINV, MU, M, C, n, d, p, N);
-print u, v;
                 numF[i, j] := u * p^(v + (r + s));
             end if;
         end for;

@@ -13,7 +13,7 @@
 // 
 
 load "DFMatrix.m";
-load "Basis.m";
+load "basis.m";
 
 // Given a vector v of coefficients and a list M of monomials, returns the
 // corresponding polynomial.
@@ -240,71 +240,6 @@ end function;
 // polynomial ring and avoid passing to the quotient field, and the 
 // determinant det M.
 // 
-// N.B.  Not maintained since Week 5, Trinity Term 2009.
-// 
-function PolynomialDecomposition(P, Q)
-	// 
-	// Extract basic parameters
-	// 
-	S := Parent(P);
-	R := CoefficientRing(S);
-	n := Rank(S)-1;
-	d := TotalDegree(P);
-	k := (TotalDegree(Q)+(n+1)) div d;
-	// 
-	// Evaluate assertions!
-	// 
-	// The first assertion says that the degree of Q is of the right form.
-	// The second assertion says that the problem might(?) be soluble, 
-	// although we maybe also need the polynomials P to define a non-
-	// singular variety for this to be the case.
-	// 
-	assert TotalDegree(Q) eq k*d - (n+1);
-	assert (k-1)*d ge n;
-	// 
-	// Obtain the matrix M
-	// 
- 	M, ROWS, COLS := AuxMatrix(P, k);
-	MAdj := Adjoint(M);
-	Det := Determinant(M);
-	// 
-	// Extract Q in vector form
-	// Compute the LHS of the matrix equation
-	// 
-	Qv := ToVectorRows(Q, ROWS);
-	// 
-	// DEBUG Output
-	// 
-	print "As a vector, Q =", Qv;
-	// 
-	// Compute the LHS of the matrix equation, i.e., 
-	// Adj(M) Q = det(M) [A0 ... An].
-	// 
-	Av := Qv * Transpose(MAdj);
-	// 
-	// DEBUG Output
-	// 
-	print "As a vector, Adj(M) * Q =", Av;
-	// 
-	// Extract the desired polynomials
-	// 
-	A := [* *];
-	col := 1;
-	for j:=1 to n+1 do
-		f := S!0;
-		for g in COLS[j] do
-			f := f + Av[col] * g;
-			col := col+1;
-		end for;
-		Append(~A, f);
-	end for;
-	return A, Det;
-end function;
-
-// The method uses the same algorithm as in the method 
-// "PolynomialDecomposition", but includes further parameters to avoid repeated
-// computations when computing connection matrices.
-// 
 // Given the auxiliary matrix M = M(P,k) with determinant Delta = Delta(P, k), 
 // let MAdj be the adjoint of M.  The lists ROWS and COLS denote the respective
 // index sets for M.  Note that COLS is given as a list of lists.
@@ -348,6 +283,25 @@ function _PolynomialDecomposition(MAdj, ROWS, COLS, P, Q)
 	return A;
 end function;
 
+// Given a multivariate polynomial P over a polynomial ring of rank n+1,
+// returns a list of the n+1 derivatives.
+// 
+function Derivatives(P)
+	// 
+	// Extract basis parameters
+	// 
+	S := Parent(P);
+	n := Rank(S)-1;
+	// 
+	// Compute derivatives DP[i].
+	// 
+	DP := [* *];
+	for j:=1 to n+1 do
+		Append(~DP, Derivative(P, j));
+	end for;
+	return DP;
+end function;
+
 // Suppose that P is a multivariate polynomial over the ring R, and that 
 // R is a ring with one free variable supporting the call Derivative(-), 
 // e.g. R = Q[t] or Q(t).  This method returns the derivative of P with 
@@ -373,25 +327,6 @@ function TDerivative(P)
 	return Pd;
 end function;
 
-// Given a multivariate polynomial P over a polynomial ring of rank n+1,
-// returns a list of the n+1 derivatives.
-// 
-function Derivatives(P)
-	// 
-	// Extract basis parameters
-	// 
-	S := Parent(P);
-	n := Rank(S)-1;
-	// 
-	// Compute derivatives DP[i].
-	// 
-	DP := [* *];
-	for j:=1 to n+1 do
-		Append(~DP, Derivative(P, j));
-	end for;
-	return DP;
-end function;
-
 // Given a polynomial f in a multivariate polynomial ring over a ring R and a
 // list L of monomials, returns whether f lies in the R-span of M.
 // 
@@ -407,95 +342,6 @@ function IsInSpan(f, L)
 		end if;
 	end for;
 	return true;
-end function;
-
-// Assumes that Q is a polynomial of degree kd - (n+1) that is to be reduced,
-// where k = 2, ..., n, n+1 is sufficiently large for this to make sense.
-// 
-// Returns a list [* gamma(1) ... gamma(k) *] of elements gamma(i) in the span 
-// of Bi such that Q is given by their sum.
-// 
-function Reduce(P, dP, M, ROWS, COLS, MAdj, MDet, B, Q, k)
-	// 
-	// Extract basic parameters.
-	// 
-	S := Parent(P);
-	n := Rank(S)-1;
-	// 
-	// Set up the output variable.
-	// 
-	L := [* *];
-	// 
-	// Note that gamma(n+1) is necessarily zero.  Thus we first reduce to
-	// the case where k is at most n.
-	// 
-	if k eq n+1 then
-		A := _PolynomialDecomposition(MAdj[k], ROWS[k], COLS[k], P, Q);
-		for i:=1 to n+1 do
-			A[i] := A[i] / MDet[k];
-		end for;
-		/**************************************************************
-		// DEBUG Output
-		LHS := Q;
-		for i:=1 to n+1 do
-			LHS := LHS - A[i] * dP[i];
-		end for;
-		print "  Reduce Q =", Q;
-		print "  k =", k;
-		print "  Q - A(0) dP(0) - ... - A(n) dP(0) =", LHS;
-		print "  As B(n+1) is empty, this should be 0.";
-		**************************************************************/
-		Q := S!0;
-		for i:=1 to n+1 do
-			Q := Q + Derivative(A[i], i) / (k-1);
-		end for;
-		k := k - 1;
-	end if;
-	// 
-	// Now we may assume that k is between 2 and n.
-	// 
-	while not IsInSpan(Q, B[k]) do
-		A := _PolynomialDecomposition(MAdj[k], ROWS[k], COLS[k], P, Q);
-		for i:=1 to n+1 do
-			A[i] := A[i] / MDet[k];
-		end for;
-		/**************************************************************
-		// DEBUG Output
-		LHS := Q;
-		for i:=1 to n+1 do
-			LHS := LHS - A[i] * dP[i];
-		end for;
-		print "  Reduce Q =", Q;
-		print "  k =", k;
-		print "  Q - A(0) dP(0) - ... - A(n) dP(0) =", LHS;
-		print "  Does the difference lie in B(k)?", IsInSpan(LHS, B[k]);
-		**************************************************************/
-		// 
-		// Use Q now for what will be gamma(k).
-		// 
-		for i:=1 to n+1 do
-			Q := Q - A[i] * dP[i];
-		end for;
-		Append(~L, Q);
-		Q := S!0;
-		for i:=1 to n+1 do
-			Q := Q + Derivative(A[i], i) / (k-1);
-		end for;
-		k := k - 1;
-	end while;
-	if k ge 1 then
-		Append(~L, Q);
-		k := k - 1;
-	end if;
-	while k ge 1 do
-		Append(~L, S!0);
-		k := k - 1;
-	end while;
-	/**********************************************************************
-	// DEBUG Output
-	print "  Return L =", Reverse(L);
-	**********************************************************************/
-	return Reverse(L);
 end function;
 
 // Assumes that Q is a polynomial of degree kd - (n+1) that is to be reduced,
@@ -572,40 +418,34 @@ function _Reduce(P, dP, M, ROWS, COLS, MAdj, MDet, B, Q, k)
 end function;
 
 function GMConnection(P)
-	// 
+
 	// Extract basic parameters.
 	// 
 	S := Parent(P);
 	R := CoefficientRing(S);
 	n := Rank(S)-1;
 	d := TotalDegree(P);
+
+    if DEBUG then
+        print "Base ring R =", R;
+        print "Polynomial ring S =", S;
+        print "n =", n;
+        print "d =", d;
+        print "Defining polynomial P =", P;
+    end if;
 	
-	// 
-	// Output:
-	//   Print input
-	// 
-	print "Base ring R =", R;
-	print "Polynomial ring S =", S;
-	print "n =", n;
-	print "d =", d;
-	print "Defining polynomial P =", P;
-	
-	// 
 	// Compute the derivative of P with respect to t, the variable of the 
 	// coefficient ring.
 	//
 	dP   := Derivatives(P);
-	dPdT := TDerivative(P);
+	dPdt := TDerivative(P);
 	
-	// 
-	// Output:
-	//   Print the derivative
-	// 
-	print "dP/dX =", dP;
-	print "dP/dt =", dPdT;
+    if DEBUG then
+        print "dP/dX =", dP;
+        print "dP/dt =", dPdt;
+    end if;
 	
-	// 
-	// Construct the index set I and its "size" lI.
+	// Construct the basis sets and their combined size
 	// 
 	I  := BasisSets(S, d);
 	lI := 0;
@@ -613,19 +453,15 @@ function GMConnection(P)
 		lI := lI + #B;
 	end for;
 	
-	// 
-	// Output:
-	//   Print the sets Bk and their combined size
-	// 
-	print "Basis sets =", I;
-	print "Total size =", lI;
-	print "Constructing auxiliary matrices..";
+    if DEBUG then
+        print "Basis sets =", I;
+        print "Total size =", lI;
+        print "Constructing auxiliary matrices..";
+    end if;
 	
-	// 
-	// Construct the auxiliary matrices
-	// Note that a priori we might need them for k = 1, ..., n, n+1. 
-	// The rows and columns sets are not non-empty unless 
-	// (k-1)*d >= n.
+	// Construct the auxiliary matrices.
+	//   Note that a priori we might need them for k = 1, ..., n, n+1. 
+	//   The rows and column sets are empty unless (k-1)*d >= n.
 	//
 	M    := [* *];
 	ROWS := [* *];
@@ -634,10 +470,10 @@ function GMConnection(P)
 	MDet := [* *];
 	k := 1;
 	while (k-1)*d lt n do
-		// 
-		// Output
-		// 
-		print "  Considering k =", k, "..";
+
+        if DEBUG then
+    		print "  Considering k =", k, "...";
+        end if;
 		
 		Append(~M, [* *]);
 		Append(~ROWS, [* *]);
@@ -645,17 +481,13 @@ function GMConnection(P)
 		Append(~MAdj, [* *]);
 		Append(~MDet, [* *]);
 		
-		// Output
-		//
-		print "    M(P,k) is a 0 x 0 matrix";
-		
 		k := k + 1;
 	end while;
 	while k le n+1 do
-		// 
-		// Output
-		// 
-		print "  Considering k =", k, "..";
+
+        if DEBUG then
+    		print "  Considering k =", k, "...";
+        end if;
 		
 		tempM, tempROWS, tempCOLS := AuxMatrix(P, k);
 		
@@ -667,23 +499,17 @@ function GMConnection(P)
 		Append(~MAdj, tempA);
 		Append(~MDet, tempd);
 		
-		// Output
-		//
-		print "    M(P,k) is a", Nrows(tempM), "x", Ncols(tempM), "matrix";
-		
 		k := k + 1;
 	end while;
 	delete k;
 	
-	//
-	// Output
-	// 
-	print "Done.";
-	print "Construct the connection matrix..";
+    if DEBUG then
+        print "Done.";
+        print "Construct the connection matrix..";
+    end if;
 	
-	// 
-	// Construct the matrix.
-	//   The Gauss-Manin connection matrix the has entries 
+	// Construct the connection matrix.
+	//   The Gauss-Manin connection matrix has entries 
 	//   GM[i, j] / D[i, j].  Later, we arrange this in the form 
 	//   GM[i, j] / r, where r is an element of R, the polynomial
 	//   least common multiple of the denominators.
@@ -693,42 +519,35 @@ function GMConnection(P)
 	col := 1;
 	for colk := 1 to n do
 		for g in I[colk] do
-			// 
-			// Output
-			// 
-			print "  Consider column:", col;
-			print "  Reduce the element corresponding to g =", g;
-			// 
+
+            if DEBUG then
+                print "  Consider column:", col;
+                print "  Reduce the element corresponding to g =", g;
+            end if;
+
 			// Set and reduce Q
 			//
-			Q := - colk * g * dPdT;
+			Q := - colk * g * dPdt;
 			L, C := _Reduce(P, dP, M, ROWS, COLS, MAdj, MDet, I, Q, colk+1);
 
-			// Output
-			// 
-			print "  L = ", L;
-			print "  C = ", C;
+            if DEBUG then 
+                print "  L = ", L;
+                print "  C = ", C;
+            end if;
 
- 			// 
-			// Extract the column vector
+			// Extract the column vector;  iterate over all rows..
 			// 
-			// Iterate over all rows..
 			row := 1;
 			for rowk := 1 to #L do
 				for f in I[rowk] do
 					GM[row, col] := MonomialCoefficient(L[rowk], f);
 					D[row, col]  := C[rowk];
 					
-					// For some unknown reason, the GCD is 
-					// computed to be 0 by Magma, leading 
-					// to a division by 0.  Thus we take 
-					// out this code.
-					// 
 					// Cancel common factors
 					gcd := GCD(GM[row, col], D[row, col]);
 					if gcd ne R ! 1 then
 						GM[row, col] := GM[row, col] / gcd;
-						D[row, col] := D[row, col] / gcd;
+						D[row, col]  := D[row, col]  / gcd;
 					end if;
 					
 					// Increment the row index
@@ -740,27 +559,21 @@ function GMConnection(P)
 		end for;
 	end for;
 	
-	// 
-	// Output
-	//
-	print "Clearing denomiators..";
+    if DEBUG then
+    	print "Clearing denomiators..";
+    end if;
 	
-	//
 	// Write the Gauss-Manin connection matrix in the form GM / r, 
 	// where r is the least common multiple of all denominators.
 	//
 	r := R ! 1;
 	for i:=1 to lI do
 		for j:=1 to lI do
-			print "  i =", i, ", j =", j;
-			print "  r =", r;
-			print "  D[i,j] =", D[i,j];
 			r := LeastCommonMultiple(r, D[i, j]);
 		end for;
 	end for;
 	for i:=1 to lI do
 		for j:=1 to lI do
-			print "  i =", i, "j =", j;
 			GM[i, j] := GM[i, j] * (r div D[i, j]);
 		end for;
 	end for;

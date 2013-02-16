@@ -2,6 +2,11 @@
 
     Copyright (C) 2009-2012 Sebastian Pancratz
 
+    Exports the following functions:
+
+        BasisSets(S, d)
+        BasisSize(n, d)
+
 ******************************************************************************/
 
 /*
@@ -11,22 +16,20 @@
 
     We make the following assumptions:
         o S is a polynomial ring in n+1 variables.
-        o d is a natural number.
+        o d >= 1 is a natural number.
  */
 function BasisSets(S, d)
 	n := Rank(S)-1;
 	B := [* *];
 	for k:=1 to n do
-		// 
+
 		// Pick up the first few cases were bk is the empty set.
-		// 
 		if k*d lt n+1 then
 			Append(~B, [* *]);
 			continue;
 		end if;
-		// 
+
 		// Now in the general case..
-		// 
 		f := S!0;
 		for i:=1 to n+1 do
 			f := f + S.i;

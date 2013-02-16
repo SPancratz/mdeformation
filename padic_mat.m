@@ -2,13 +2,14 @@
 
     Copyright (C) 2012 Sebastian Pancratz
 
-    This file contains auxiliary functionality for treating 
-    pairs $(U, v)$ $p$-adic matrices $p^v U$.
+    This file contains auxiliary functionality for treating pairs $(U, v)$ 
+    of integer matrices and integers  as $p$-adic matrices $p^v U$.
 
 ******************************************************************************/
 
 /*
-    Let $f = p^v u$.
+    Writes the integer $f$ in the form $f = p^v u$ where $u$ is a $p$-adic 
+    unit whenever $f$ is non-zero.  When $f = 0$, sets $u = v = 0$.
  */
 procedure _remove(~u, ~v, f, p)
     if f eq 0 then
@@ -21,21 +22,8 @@ procedure _remove(~u, ~v, f, p)
 end procedure;
 
 /*
-    Returns the rising factorial $x (x + 1) \dotsm (x + k - 1)$.
- */
-function _rfac(x, k)
-    Z := Integers();
-    y := Z!1;
-    for i := 0 to k-1 do
-        y := y * (x + i);
-    end for;
-    return y;
-end function;
-
-/*
-    Returns the $p$-adic valuation of the integer matrix $A$.
-
-    By our convention, the valuation of the zero matrix is $0$.
+    Returns the $p$-adic valuation of the integer matrix $A$ 
+    whenever $A$ is non-zero and $0$ otherwise.
  */
 function MatrixValuation(A, p)
     m := NumberOfRows(A);
@@ -68,7 +56,7 @@ function MatrixValuation(A, p)
 end function;
 
 /*
-    Given an integer matrix $U$ and an integral exponent $v$,
+    Given an integer matrix $U$ and an integral exponent $v$ 
     representing the matrix $p^{-v} U$, brings $(U,v)$ into
     canonical form.
  */
