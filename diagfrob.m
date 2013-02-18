@@ -16,6 +16,7 @@ load "padic_mat.m";
     for integers $x$ and $k$ with $k >= 0$.
  */
 function _rfac(x, k)
+    Z := Integers();
     y := Z!1;
     for i := 0 to k-1 do
         y := y * (x + i);
@@ -195,7 +196,6 @@ end function;
     \]
  */
 function dsum_2(DINV, MU, ui, vi, M, n, d, N)
-
     Z := Integers();
 
     m0 := (2 * (ui + 1) - (vi + 1)) div d;
@@ -212,6 +212,7 @@ function dsum_2(DINV, MU, ui, vi, M, n, d, N)
 
         r := m div 2;
 
+        // f0, f1, f2
         if (r eq 0) then
             f2 := Z!1;
         elif (r eq 1) then
@@ -232,10 +233,8 @@ function dsum_2(DINV, MU, ui, vi, M, n, d, N)
             f2 := f2 mod pN;
         end if;
 
-        /*
-            g = f_{r} d^{-r} \mu_m
-              = f2 * dinv[r] * mu[m]
-         */
+        // g = f_{r} d^{-r} \mu_m
+        //   = f2 * dinv[r] * mu[m]
         g := f2;
         if r gt 0 then
             g := (g * DINV[r]) mod pN;
@@ -258,7 +257,6 @@ end function;
     \sum_{m,r} \Bigl(\frac{u_i + 1}{d}\Bigr)_r p^{r - \floor{m/p}} \mu_m.
     \]
  */
-
 function dsum_p(DINV, MU, ui, vi, M, n, d, p, N)
     Z := Integers();
 
@@ -268,6 +266,7 @@ function dsum_p(DINV, MU, ui, vi, M, n, d, p, N)
     r  := Z!0;
     m  := (p * (ui + 1) - (vi + 1)) div d;
 
+    // Unrolled first iteration
     if m le M then
         h := p^(r - (m div p));
         if m eq 0 then
@@ -277,11 +276,10 @@ function dsum_p(DINV, MU, ui, vi, M, n, d, p, N)
         end if;
         x := x + g;
     end if;
-
-    f := Z!1;
-
     r := r + 1;
     m := m + p;
+
+    f := Z!1;
     while m le M do
 
         f := f * (ui + 1 + (r - 1) * d);
@@ -360,16 +358,15 @@ function alpha(U, V, A, DINV, MU, M, n, d, p, N)
 end function;
 
 /*
-    Expects two sequences (that is, not lists) U and V so that we can apply the '&' operator.
+    Computes the entry at position $(U,V)$ in the Frobenius matrix.
+
+    Expects two sequences (that is, not lists) $U$ and $V$ so that 
+    we can apply the '&' operator.
  */
 procedure entry(~u, ~v, U, V, A, DINV, MU, M, C, n, d, p, N)
-
     Z := Integers();
 
-    /*
-        Compute $f := (-1)^{u'+v'} (v'-1)! p^n$ exactly.
-     */
-
+    // Compute $f := (-1)^{u'+v'} (v'-1)! p^n$ exactly.
     ud := (n + 1 + &+U);
     vd := (n + 1 + &+V);
 
@@ -380,21 +377,17 @@ procedure entry(~u, ~v, U, V, A, DINV, MU, M, C, n, d, p, N)
         f := -f;
     end if;
 
-    /*
-        Compute $g := (u'-1)! \alpha_{u+1,v+1}$ to precision $N - n + 2 C$.
-     */
+    // Compute $g := (u'-1)! \alpha_{u+1,v+1}$ to precision $N - n + 2 C$.
     g := Factorial(ud - 1);
     h := alpha(U, V, A, DINV, MU, M, n, d, p, N - n + 2 * C);
     g := g * h;
 
-    /*
-        Set (u,v) to the product of $f$ and $g^{-1}$.
-     */
+    // Set $(u, v)$ to the product of $f$ and $g^{-1}$.
     v := Z!0;
     w := Z!0;
     _remove(~f, ~v, f, p);
     _remove(~g, ~w, g, p);
-    v := v + w;
+    v := v - w;
 
     if v ge N then
         u := 0;
@@ -406,8 +399,12 @@ procedure entry(~u, ~v, U, V, A, DINV, MU, M, C, n, d, p, N)
     end if;
 end procedure;
 
+/*
+    Computes the matrix for the action of Frobenius on the 
+    smooth diagonal hypersurface of degree $d$ given by the 
+    list of coefficients $A$ (expected as integers) modulo $p$.
+ */
 procedure diagfrob(~numF, ~denF, A, n, d, p, N)
-
     Z := Integers();
     S := PolynomialRing(Z, n + 1);
 
