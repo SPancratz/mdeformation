@@ -4,6 +4,7 @@
 
     Exports the following functions:
 
+        frobBound(n, p)
         diagfrob(~numF, ~denF, A, n, d, p, N)
 
 ******************************************************************************/
@@ -22,6 +23,14 @@ function _rfac(x, k)
         y := y * (x + i);
     end for;
     return y;
+end function;
+
+function frobBound(n, p)
+    delta := Valuation(Factorial(n-1), p);
+    for i := 2 to n-1 do
+        delta := delta + Floor(Log(p,i));
+    end for;
+    return delta;
 end function;
 
 /*
@@ -367,8 +376,8 @@ procedure entry(~u, ~v, U, V, A, DINV, MU, M, C, n, d, p, N)
     Z := Integers();
 
     // Compute $f := (-1)^{u'+v'} (v'-1)! p^n$ exactly.
-    ud := (n + 1 + &+U);
-    vd := (n + 1 + &+V);
+    ud := (n + 1 + &+U) div d;
+    vd := (n + 1 + &+V) div d;
 
     f := Factorial(vd - 1);
     h := p^n;
@@ -408,9 +417,8 @@ procedure diagfrob(~numF, ~denF, A, n, d, p, N)
     Z := Integers();
     S := PolynomialRing(Z, n + 1);
 
-    r  := Valuation(Factorial(n - 1), p);
-    s  := (n + 1) * Floor(Log(p, n - 1));
-    C  := n + 2 * r + s;
+    delta := frobBound(n, p);
+    C  := n + Valuation(Factorial(n - 1), p) + delta;
     N2 := N - n + 2 * C;
     M  :=  ((p*p*N2) div (p-1)) + p*p*Floor(Log(p, (N2 div (p-1)) + 2)) + p*p * 4;
 
@@ -454,12 +462,12 @@ procedure diagfrob(~numF, ~denF, A, n, d, p, N)
                 u := Z!0;
                 v := Z!0;
                 entry(~u, ~v, U, V, ALIFT, DINV, MU, M, C, n, d, p, N);
-                numF[i, j] := u * p^(v + (r + s));
+                numF[i, j] := u * p^(v + delta);
             end if;
         end for;
     end for;
 
-    denF := -(r + s);
+    denF := -delta;
 
     padic_mat_canonicalise(~numF, ~denF, p);
 end procedure;
