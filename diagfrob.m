@@ -409,10 +409,10 @@ procedure diagfrob(~numF, ~denF, A, n, d, p, N)
     S := PolynomialRing(Z, n + 1);
 
     r  := Valuation(Factorial(n - 1), p);
-    s  := (n + 1) * Floor(Log(n - 1, p));
+    s  := (n + 1) * Floor(Log(p, n - 1));
     C  := n + 2 * r + s;
     N2 := N - n + 2 * C;
-    M  :=  ((p*p*N2) div (p-1)) + p*p*Floor(Log((N2 div (p-1)) + 2, p)) + p*p * 4;
+    M  :=  ((p*p*N2) div (p-1)) + p*p*Floor(Log(p, (N2 div (p-1)) + 2)) + p*p * 4;
 
     ALIFT := precompute_lifts(A, n, p, N2);
     DINV  := precompute_dinv(M, d, p, N2);
