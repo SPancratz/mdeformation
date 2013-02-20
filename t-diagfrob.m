@@ -37,7 +37,7 @@ for run := 1 to nRuns do
     denF := Z!0;
     diagfrob(~numF, ~denF, A, n, d, p, 50);
 
-    if (denF lt -delta) then
+    if ((denF lt -delta) or (denF gt (n-1) div 2)) then
         print "Error.  ord_p(F) is not within bounds.";
         print p, n, d;
         nFail := nFail + 1;
