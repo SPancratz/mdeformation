@@ -8,11 +8,11 @@ load "diagfrob.m";
 
 Z := Integers();
 
-nRuns := 10;
+nRuns := 20;
 nFail := 0;
 
-Lp := [2,3,5,7,11,13,17];
-Ln := [2,3,4,5,6,7];
+Lp := [2,3,5,7,11,13];
+Ln := [2,3,4];
 Ld := [3,4,5];
 
 for run := 1 to nRuns do
@@ -23,6 +23,12 @@ for run := 1 to nRuns do
     while d mod p eq 0 do
         d := Random(Ld);
     end while;
+
+    N0 := prec_zeta_function(n, d, p, 1);
+    N1 := prec_frobq(n, d, p, 1, N0);
+    // [F_q : F_p] = 1
+
+    print n, d, p, N1;
 
     Zmodp := ResidueClassRing(p);
     A:=[];
@@ -35,7 +41,7 @@ for run := 1 to nRuns do
     b := BasisSize(n, d);
     numF := ZeroMatrix(Z, b, b);
     denF := Z!0;
-    diagfrob(~numF, ~denF, A, n, d, p, 50);
+    diagfrob(~numF, ~denF, A, n, d, p, N1);
 
     if ((denF lt -delta) or (denF gt (n-1) div 2)) then
         print "Error.  ord_p(F) is not within bounds.";

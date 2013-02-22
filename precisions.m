@@ -11,6 +11,15 @@
 
 ******************************************************************************/
 
+load "basis.m";
+
+/*
+    Returns the absolute value of an inclusive lower bound 
+    on the valuation of the $p$th and $q$th power Frobenius 
+    matrices at any fibre in the family of smooth projective 
+    hypersurfaces.
+ */
+
 function frobBound(n, p)
     delta := Valuation(Factorial(n-1), p);
     for i := 2 to n-1 do
@@ -75,7 +84,7 @@ end function;
 
 /*
     Returns $N_1s$ such that, in order to determine the coefficients 
-    of the characteristic polynomial of $p^{-1} F_p$ to $p$-adic 
+    of the characteristic polynomial of $q^{-1} F_q$ to $p$-adic 
     precision $N_0$ it suffices to compute the matrix to precision $N_1$.
 
     When $X$ is a smooth projective surface and $p > 2$, we can do better 
@@ -83,7 +92,7 @@ end function;
     of the polynomial requires an extra $a$ digits of precision.
  */
 
-function prec_frobq(n, d, p, a, n, N0)
+function prec_frobq(n, d, p, a, N0)
     if (n eq 3 and p ne 2) then
         return N0 + a;
     else
@@ -91,7 +100,14 @@ function prec_frobq(n, d, p, a, n, N0)
     end if;
 end function;
 
+/*
+    Returns $N_2$ such that, in order to determine the coefficients 
+    of the $q$th power Frobenius to precision $N_1$ in suffices to 
+    determine the coefficients of the $p$th power Frobenius to 
+    precision $N_2$.
+ */
+
 function prec_frobp(n, p, a, N1)
     return N1 + (a - 1) * frobBound(n, p);
-end function
+end function;
 
