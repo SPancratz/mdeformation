@@ -11,6 +11,7 @@
 
 load "basis.m";
 load "padic_mat.m";
+load "precisions.m";
 
 /*
     Returns the rising factorial $x (x + 1) \dotsm (x + k - 1)$ 
@@ -23,14 +24,6 @@ function _rfac(x, k)
         y := y * (x + i);
     end for;
     return y;
-end function;
-
-function frobBound(n, p)
-    delta := Valuation(Factorial(n-1), p);
-    for i := 2 to n-1 do
-        delta := delta + Floor(Log(p,i));
-    end for;
-    return delta;
 end function;
 
 /*
