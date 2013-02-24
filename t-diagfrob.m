@@ -5,6 +5,7 @@
 ******************************************************************************/
 
 load "diagfrob.m";
+load "revcharpoly.m";
 
 Z := Integers();
 
@@ -48,6 +49,15 @@ for run := 1 to nRuns do
         print p, n, d;
         nFail := nFail + 1;
     end if;
+
+    // Check Weil polynomial
+    // Qp    := pAdicField(p, N1);
+    // Qq<x> := UnramifiedExtension(Qp, 1);
+    // M     := MatrixAlgebra(Qq, b);
+    // F := M!(p^denF * numF);
+    // f := revcharpoly(F, n, d, N0);
+    // print f;
+
 end for;
 
 print "Failures:", nFail;
